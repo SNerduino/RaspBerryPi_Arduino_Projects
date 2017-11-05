@@ -11,13 +11,19 @@
 
 #include <SPI.h>
 #include <RF24.h>
-
+// CE, CSN
 RF24 radio(7,8);
 BTLE btle(&radio);
 #define DHTTYPE DHT11   // DHT 11
 #define DHTPIN 2     // what digital pin we're connected to
 #define LED_PIN 13
 DHT dht(DHTPIN, DHTTYPE);
+
+struct temphum_data {
+  int16_t   service_uuid;
+  nRF_Float temp;
+  nRF_Float hum;
+};
 
 void setup() {
   Serial.begin(115200);
@@ -34,7 +40,7 @@ void setup() {
 }
 
 void loop() {
-  nrf_service_data buf;
+  temphum_data buf;
   // Reading temperature or humidity takes about 250 milliseconds!
   // Sensor readings may also be up to 2 seconds 'old' (its a very slow sensor)
   float h = dht.readHumidity();
@@ -51,7 +57,8 @@ void loop() {
     return;
   }
   buf.service_uuid = NRF_TEMPERATURE_SERVICE_UUID;
-  buf.value = BTLE::to_nRF_Float(t);
+  buf.temp = BTLE::to_nRF_Float(t);
+  buf.hum = BTLE::to_nRF_Float(h);
   
 //  Serial.println(" OK ");
   if(!btle.advertise(0x16, &buf, sizeof(buf))) {

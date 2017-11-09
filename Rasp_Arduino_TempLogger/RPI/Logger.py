@@ -3,12 +3,11 @@ import datetime
 import mysql.connector
 from mysql.connector import errorcode
 # Database configuration
-
 db_config ={
 'User_NAME' : 'TempLogger',
 'DB_NAME'   : 'ATemps',
 'User_PASSWORD' : 'raspberry'}
-
+# A function to create the database if it doesn not exist
 def create_database(cursor):
     try:
         cursor.execute(
@@ -24,9 +23,7 @@ cursor = cnx.cursor()
 print("Connected")
 
 try :
-#    cnx = mysql.connector.connect(user='TempLogger', password='raspberry',
-#                              host='localhost',
-#                              database='ATemps')
+
     print("Selecting database")
     cnx.database = db_config['DB_NAME']  
     print("Database selected")
@@ -66,22 +63,23 @@ class ScanDelegate(DefaultDelegate):
         elif isNewData:
             print("Received new data from", dev.addr)
         name=""
-        val= 0     
+        temp= 0     
+        hum= 0     
         isASensor  = False
-        roomNumber = 0
         for (adtype, desc, value) in dev.getScanData():
             if(adtype == 22):
                 raw = dev.scanData.get(adtype, None)
                 # Convert nrf_Float to normal float
-                val=float(int.from_bytes(raw[2:4], byteorder='little', signed=False))/100.0;
+                temp=float(int.from_bytes(raw[2:4], byteorder='little', signed=False))/100.0;
+                hum=float(int.from_bytes(raw[6:8], byteorder='little', signed=False))/100.0;
             if(adtype == 9):
                 name=value
                 if name.startswith("AN"):
                     isASensor=True
                     
         if isASensor == True:
-            print("{} : {} = {}°".format(t, name, val))
-            querry = "INSERT INTO tempdat(sensorID, date, time, temperature, humidity) VALUES ('{}', '{}', '{}', {}, {})".format(name, d,t.strftime('%H:%M:%S'),val,0)
+            print("{} : temperature from {}  is {}° and humidity is {}".format(t, name, temp, hum))
+            querry = "INSERT INTO tempdat(sensorID, date, time, temperature, humidity) VALUES ('{}', '{}', '{}', {}, {})".format(name, d,t.strftime('%H:%M:%S'),temp,hum)
             print(querry)
             # Save to the database
             cursor.execute(querry)
